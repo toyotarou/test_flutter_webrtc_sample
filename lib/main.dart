@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -12,9 +11,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     debugPrint("Building MyApp widget...");
-    return const MaterialApp(
-      home: VirtualBackgroundScreen(),
-    );
+    return const MaterialApp(home: VirtualBackgroundScreen());
   }
 }
 
@@ -26,12 +23,8 @@ class VirtualBackgroundScreen extends StatelessWidget {
     debugPrint("Building VirtualBackgroundScreen widget...");
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Virtual Background with Debug'),
-      ),
-      body: const Center(
-        child: HtmlElementView(viewType: 'outputCanvasContainer'),
-      ),
+      appBar: AppBar(title: const Text('Virtual Background with Debug')),
+      body: const Center(child: HtmlElementView(viewType: 'outputCanvasContainer')),
     );
   }
 }
