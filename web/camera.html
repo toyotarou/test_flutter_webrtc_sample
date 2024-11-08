@@ -6,7 +6,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation"></script>
     <style>
-        /* キャンバスとボタンのレイアウトを設定 */
         #outputCanvasContainer {
           display: flex;
           justify-content: center;
@@ -16,7 +15,6 @@
         #outputCanvas {
           border: 1px solid #000;
         }
-        /* ボタンのコンテナはキャンバスの下に配置 */
         .button-container {
           display: flex;
           justify-content: center;
@@ -33,13 +31,7 @@
         let isCameraOn = false;
         let videoStream;
 
-        function logMessage(message) {
-          console.log("Debug: " + message);
-        }
-
-        async function initializeSegmentation() {
-          logMessage("Initializing segmentation...");
-
+        function initializeSegmentation() {
           videoElement = document.createElement("video");
           videoElement.style.display = "none";
           document.body.appendChild(videoElement);
@@ -51,7 +43,6 @@
           backgroundElement.src = "/assets/images/background1.jpg";
           document.body.appendChild(backgroundElement);
 
-          // MediaPipe Selfie Segmentationのセットアップ
           selfieSegmentation = new SelfieSegmentation({
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`,
           });
@@ -59,15 +50,13 @@
           selfieSegmentation.onResults(onResults);
 
           backgroundElement.onload = () => {
-            logMessage("Background image loaded.");
             isBackgroundLoaded = true;
           };
 
-          await startVideoStream();
+          startVideoStream();
         }
 
         async function startVideoStream() {
-          logMessage("Starting video stream...");
           videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
           videoElement.srcObject = videoStream;
 
@@ -79,7 +68,6 @@
         }
 
         function stopVideoStream() {
-          logMessage("Stopping video stream...");
           if (videoStream) {
             videoStream.getTracks().forEach((track) => track.stop());
             videoElement.srcObject = null;
@@ -103,7 +91,6 @@
 
         async function segment() {
           if (isCameraOn && isBackgroundLoaded) {
-            logMessage("Sending video frame for segmentation...");
             await selfieSegmentation.send({ image: videoElement });
           }
           if (isCameraOn) requestAnimationFrame(segment);
@@ -127,26 +114,21 @@
           maskContext.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
 
           context.drawImage(maskCanvas, 0, 0, canvasElement.width, canvasElement.height);
-
-          logMessage("Finished drawing frame with segmented person over background.");
         }
 
-        window.changeBackground = function (imagePath) {
-          logMessage("Changing background to: " + imagePath);
+        function changeBackground(imagePath) {
           isBackgroundLoaded = false;
           backgroundElement.src = imagePath;
-        };
+        }
     </script>
 </head>
 <body onload="initializeSegmentation()">
 <h1>カメラ表示</h1>
 
-<!-- キャンバスを中央に配置 -->
 <div id="outputCanvasContainer">
     <canvas id="outputCanvas" width="640" height="480"></canvas>
 </div>
 
-<!-- ボタンコンテナをキャンバスの下に配置 -->
 <div class="button-container">
     <button onclick="changeBackground('/assets/images/background1.jpg')">背景1</button>
     <button onclick="changeBackground('/assets/images/background2.jpg')">背景2</button>
