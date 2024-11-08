@@ -109,9 +109,11 @@
 <body onload="initializeSegmentation()">
 <video id="video" style="display:none;"></video>
 <img id="background" src="/assets/images/background1.jpg" style="display:none;">
-<canvas id="outputCanvas" width="640" height="480"></canvas>
+<div id="outputCanvasContainer">
+    <canvas id="outputCanvas" width="640" height="480"></canvas>
+</div>
 
-<!-- 背景画像を切り替えるボタンを追加 -->
+<!-- HTML側に背景切り替えボタンを追加 -->
 <div style="margin-top: 20px;">
     <button onclick="changeBackground('/assets/images/background1.jpg')">背景1</button>
     <button onclick="changeBackground('/assets/images/background2.jpg')">背景2</button>
