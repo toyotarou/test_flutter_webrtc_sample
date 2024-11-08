@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 void main() {
-  debugPrint("Flutter Web App is starting...");
   runApp(const MyApp());
 }
 
@@ -10,22 +9,12 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint("Building MyApp widget...");
-    return const MaterialApp(home: VirtualBackgroundScreen());
-  }
-}
-
-class VirtualBackgroundScreen extends StatelessWidget {
-  const VirtualBackgroundScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    debugPrint("Building VirtualBackgroundScreen widget...");
-    return Container();
-
-    // return Scaffold(
-    //   appBar: AppBar(title: const Text('Virtual Background with Debug')),
-    //   body: const Center(child: HtmlElementView(viewType: 'outputCanvasContainer')),
-    // );
+    return MaterialApp(
+      title: 'Flutter Web with JavaScript',
+      home: Scaffold(
+        appBar: AppBar(title: const Text('Virtual Background Example')),
+        body: const Center(child: Text('JavaScriptで機能を制御しています。')),
+      ),
+    );
   }
 }
