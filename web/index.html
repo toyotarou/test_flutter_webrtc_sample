@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Flutter WebRTC with Virtual Background</title>
+    <title>Flutter WebRTC with Virtual Background Debug</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation"></script>
     <script>
@@ -53,6 +53,7 @@
 
           async function segment() {
             if (isBackgroundLoaded) {
+              logMessage("Sending video frame for segmentation...");
               await selfieSegmentation.send({ image: videoElement });
             } else {
               logMessage("Waiting for background image to load...");
@@ -63,17 +64,34 @@
         }
 
         function onResults(results) {
-          if (!isBackgroundLoaded) {
-            logMessage("Background not loaded yet.");
-            return;
-          }
+          logMessage("Received segmentation results...");
 
-          logMessage("Processing segmentation results...");
           const context = canvasElement.getContext('2d');
-          context.drawImage(backgroundElement, 0, 0, canvasElement.width, canvasElement.height);
-          context.globalCompositeOperation = 'source-in';
-          context.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+          context.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+          // 背景画像を描画
+          logMessage("Drawing background image...");
           context.globalCompositeOperation = 'source-over';
+          context.drawImage(backgroundElement, 0, 0, canvasElement.width, canvasElement.height);
+
+          // segmentationMaskを利用して人物部分だけをカメラ映像に適用
+          logMessage("Applying segmentation mask for person cutout...");
+
+          // マスクを新しいCanvasに描画して人物のアルファチャンネルを作成
+          const maskCanvas = document.createElement('canvas');
+          maskCanvas.width = canvasElement.width;
+          maskCanvas.height = canvasElement.height;
+          const maskContext = maskCanvas.getContext('2d');
+          maskContext.drawImage(results.segmentationMask, 0, 0, canvasElement.width, canvasElement.height);
+
+          // 人物部分だけをカメラ映像で重ねる
+          maskContext.globalCompositeOperation = 'source-in';
+          maskContext.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+
+          // マスクされたカメラ映像をメインキャンバスに描画
+          context.drawImage(maskCanvas, 0, 0, canvasElement.width, canvasElement.height);
+
+          logMessage("Finished drawing frame with segmented person over background.");
         }
 
         // 背景画像を変更する関数
