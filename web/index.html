@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flutter WebRTC with Virtual Background</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation"></script>
+    <script>
+        let videoElement;
+        let canvasElement;
+        let backgroundElement;
+        let selfieSegmentation;
+        let isBackgroundLoaded = false;
+
+        function logMessage(message) {
+          console.log("Debug: " + message);
+        }
+
+        async function initializeSegmentation() {
+          logMessage("Initializing segmentation...");
+
+          videoElement = document.getElementById('video');
+          canvasElement = document.getElementById('outputCanvas');
+          backgroundElement = document.getElementById('background');
+
+          if (!canvasElement) logMessage("Error: Canvas element not found!");
+          if (!videoElement) logMessage("Error: Video element not found!");
+          if (!backgroundElement) logMessage("Error: Background element not found!");
+
+          // MediaPipe Selfie Segmentationのセットアップ
+          selfieSegmentation = new SelfieSegmentation({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
+          });
+          selfieSegmentation.setOptions({ modelSelection: 1 });
+          selfieSegmentation.onResults(onResults);
+
+          await startVideoStream();
+
+          // 背景画像の読み込み完了時にフラグをセット
+          backgroundElement.onload = () => {
+            logMessage("Background image loaded.");
+            isBackgroundLoaded = true;
+          };
+
+          // 背景画像をリロードしてonloadイベントをトリガー
+          backgroundElement.src = "/assets/images/background1.jpg";
+        }
+
+        async function startVideoStream() {
+          logMessage("Starting video stream...");
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          videoElement.srcObject = stream;
+          videoElement.play();
+
+          async function segment() {
+            if (isBackgroundLoaded) {
+              await selfieSegmentation.send({ image: videoElement });
+            } else {
+              logMessage("Waiting for background image to load...");
+            }
+            requestAnimationFrame(segment);
+          }
+          segment();
+        }
+
+        function onResults(results) {
+          if (!isBackgroundLoaded) {
+            logMessage("Background not loaded yet.");
+            return;
+          }
+
+          logMessage("Processing segmentation results...");
+          const context = canvasElement.getContext('2d');
+          context.drawImage(backgroundElement, 0, 0, canvasElement.width, canvasElement.height);
+          context.globalCompositeOperation = 'source-in';
+          context.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+          context.globalCompositeOperation = 'source-over';
+        }
+
+        // 背景画像を変更する関数
+        window.changeBackground = function(imagePath) {
+          logMessage("Changing background to: " + imagePath);
+          isBackgroundLoaded = false;
+          backgroundElement.src = imagePath;
+          backgroundElement.onload = () => {
+            logMessage("New background image loaded.");
+            isBackgroundLoaded = true;
+          };
+        };
+    </script>
+</head>
+<body onload="initializeSegmentation()">
+<video id="video" style="display:none;"></video>
+<img id="background" src="/assets/images/background1.jpg" style="display:none;">
+<canvas id="outputCanvas" width="640" height="480"></canvas>
+</body>
+</html>
