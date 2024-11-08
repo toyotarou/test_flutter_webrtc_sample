@@ -1,36 +1,27 @@
-import 'dart:html' as html;
-import 'package:flutter/foundation.dart'; // kIsWebのためにインポート
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:js/js.dart';
 
 void main() {
   debugPrint("Flutter Web App is starting...");
-
-  if (kIsWeb) {
-    // HTMLのdiv要素にキャンバスを追加する
-    debugPrint("Adding outputCanvasContainer to HTML body...");
-    final container = html.DivElement()..id = 'outputCanvasContainer';
-    final canvas = html.CanvasElement(width: 640, height: 480)..id = 'outputCanvas';
-    container.append(canvas);
-    html.document.body?.append(container);
-  } else {
-    debugPrint("This app is running in a non-Web environment.");
-  }
-
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     debugPrint("Building MyApp widget...");
-    return MaterialApp(
+    return const MaterialApp(
       home: VirtualBackgroundScreen(),
     );
   }
 }
 
 class VirtualBackgroundScreen extends StatelessWidget {
+  const VirtualBackgroundScreen({super.key});
+
   // JavaScriptのchangeBackground関数を呼び出して背景を変更する
   void _changeBackground(String imagePath) {
     debugPrint("Changing background to: $imagePath");
@@ -43,13 +34,13 @@ class VirtualBackgroundScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Virtual Background with Debug'),
+        title: const Text('Virtual Background with Debug'),
       ),
       body: Column(
         children: [
-          Expanded(
+          const Expanded(
             child: Center(
-              child: HtmlElementView(viewType: 'outputCanvasContainer'), // Canvasを追加したコンテナを表示
+              child: HtmlElementView(viewType: 'outputCanvasContainer'),
             ),
           ),
           Padding(
@@ -59,15 +50,15 @@ class VirtualBackgroundScreen extends StatelessWidget {
               children: [
                 ElevatedButton(
                   onPressed: () => _changeBackground('assets/images/background1.jpg'),
-                  child: Text('Background 1'),
+                  child: const Text('Background 1'),
                 ),
                 ElevatedButton(
                   onPressed: () => _changeBackground('assets/images/background2.jpg'),
-                  child: Text('Background 2'),
+                  child: const Text('Background 2'),
                 ),
                 ElevatedButton(
                   onPressed: () => _changeBackground('assets/images/background3.jpg'),
-                  child: Text('Background 3'),
+                  child: const Text('Background 3'),
                 ),
               ],
             ),
