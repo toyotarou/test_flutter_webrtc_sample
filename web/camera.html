@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Virtual Background Camera</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation"></script>
+    <style>
+        /* キャンバスとボタンのレイアウトを設定 */
+        #outputCanvasContainer {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          margin-top: 20px;
+        }
+        #outputCanvas {
+          border: 1px solid #000;
+        }
+        /* ボタンのコンテナはキャンバスの下に配置 */
+        .button-container {
+          display: flex;
+          justify-content: center;
+          gap: 10px;
+          margin-top: 20px;
+        }
+    </style>
+    <script>
+        let videoElement;
+        let canvasElement;
+        let backgroundElement;
+        let selfieSegmentation;
+        let isBackgroundLoaded = false;
+        let isCameraOn = false;
+        let videoStream;
+
+        function logMessage(message) {
+          console.log("Debug: " + message);
+        }
+
+        async function initializeSegmentation() {
+          logMessage("Initializing segmentation...");
+
+          videoElement = document.createElement("video");
+          videoElement.style.display = "none";
+          document.body.appendChild(videoElement);
+
+          canvasElement = document.getElementById("outputCanvas");
+
+          backgroundElement = document.createElement("img");
+          backgroundElement.style.display = "none";
+          backgroundElement.src = "/assets/images/background1.jpg";
+          document.body.appendChild(backgroundElement);
+
+          // MediaPipe Selfie Segmentationのセットアップ
+          selfieSegmentation = new SelfieSegmentation({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`,
+          });
+          selfieSegmentation.setOptions({ modelSelection: 1 });
+          selfieSegmentation.onResults(onResults);
+
+          backgroundElement.onload = () => {
+            logMessage("Background image loaded.");
+            isBackgroundLoaded = true;
+          };
+
+          await startVideoStream();
+        }
+
+        async function startVideoStream() {
+          logMessage("Starting video stream...");
+          videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+          videoElement.srcObject = videoStream;
+
+          videoElement.onloadedmetadata = () => {
+            videoElement.play();
+            isCameraOn = true;
+            segment();
+          };
+        }
+
+        function stopVideoStream() {
+          logMessage("Stopping video stream...");
+          if (videoStream) {
+            videoStream.getTracks().forEach((track) => track.stop());
+            videoElement.srcObject = null;
+            isCameraOn = false;
+
+            const context = canvasElement.getContext("2d");
+            context.fillStyle = "black";
+            context.fillRect(0, 0, canvasElement.width, canvasElement.height);
+          }
+        }
+
+        function toggleCamera() {
+          if (isCameraOn) {
+            stopVideoStream();
+            document.getElementById("toggleCameraButton").innerText = "カメラ ON";
+          } else {
+            startVideoStream();
+            document.getElementById("toggleCameraButton").innerText = "カメラ OFF";
+          }
+        }
+
+        async function segment() {
+          if (isCameraOn && isBackgroundLoaded) {
+            logMessage("Sending video frame for segmentation...");
+            await selfieSegmentation.send({ image: videoElement });
+          }
+          if (isCameraOn) requestAnimationFrame(segment);
+        }
+
+        function onResults(results) {
+          if (!isCameraOn) return;
+
+          const context = canvasElement.getContext("2d");
+          context.clearRect(0, 0, canvasElement.width, canvasElement.height);
+          context.globalCompositeOperation = "source-over";
+          context.drawImage(backgroundElement, 0, 0, canvasElement.width, canvasElement.height);
+
+          const maskCanvas = document.createElement("canvas");
+          maskCanvas.width = canvasElement.width;
+          maskCanvas.height = canvasElement.height;
+          const maskContext = maskCanvas.getContext("2d");
+          maskContext.drawImage(results.segmentationMask, 0, 0, canvasElement.width, canvasElement.height);
+
+          maskContext.globalCompositeOperation = "source-in";
+          maskContext.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+
+          context.drawImage(maskCanvas, 0, 0, canvasElement.width, canvasElement.height);
+
+          logMessage("Finished drawing frame with segmented person over background.");
+        }
+
+        window.changeBackground = function (imagePath) {
+          logMessage("Changing background to: " + imagePath);
+          isBackgroundLoaded = false;
+          backgroundElement.src = imagePath;
+        };
+    </script>
+</head>
+<body onload="initializeSegmentation()">
+<h1>カメラ表示</h1>
+
+<!-- キャンバスを中央に配置 -->
+<div id="outputCanvasContainer">
+    <canvas id="outputCanvas" width="640" height="480"></canvas>
+</div>
+
+<!-- ボタンコンテナをキャンバスの下に配置 -->
+<div class="button-container">
+    <button onclick="changeBackground('/assets/images/background1.jpg')">背景1</button>
+    <button onclick="changeBackground('/assets/images/background2.jpg')">背景2</button>
+    <button onclick="changeBackground('/assets/images/background3.jpg')">背景3</button>
+    <button id="toggleCameraButton" onclick="toggleCamera()">カメラ OFF</button>
+</div>
+</body>
+</html>

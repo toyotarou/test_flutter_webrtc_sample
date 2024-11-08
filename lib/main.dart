@@ -21,10 +21,11 @@ class VirtualBackgroundScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     debugPrint("Building VirtualBackgroundScreen widget...");
+    return Container();
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Virtual Background with Debug')),
-      body: const Center(child: HtmlElementView(viewType: 'outputCanvasContainer')),
-    );
+    // return Scaffold(
+    //   appBar: AppBar(title: const Text('Virtual Background with Debug')),
+    //   body: const Center(child: HtmlElementView(viewType: 'outputCanvasContainer')),
+    // );
   }
 }
