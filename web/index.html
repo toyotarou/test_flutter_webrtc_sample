@@ -68,6 +68,11 @@
             videoStream.getTracks().forEach(track => track.stop());
             videoElement.srcObject = null;
             isCameraOn = false;
+
+            // キャンバスを黒一色で塗りつぶす
+            const context = canvasElement.getContext('2d');
+            context.fillStyle = "black";
+            context.fillRect(0, 0, canvasElement.width, canvasElement.height);
           }
         }
 
