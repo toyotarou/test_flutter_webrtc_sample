@@ -10,106 +10,127 @@
         let backgroundElement;
         let selfieSegmentation;
         let isBackgroundLoaded = false;
+        let isCameraOn = false;
+        let videoStream;
 
         function logMessage(message) {
-            console.log("Debug: " + message);
+          console.log("Debug: " + message);
         }
 
         async function initializeSegmentation() {
-            logMessage("Initializing segmentation...");
+          logMessage("Initializing segmentation...");
 
-            videoElement = document.getElementById('video');
-            canvasElement = document.getElementById('outputCanvas');
-            backgroundElement = document.getElementById('background');
+          videoElement = document.getElementById('video');
+          canvasElement = document.getElementById('outputCanvas');
+          backgroundElement = document.getElementById('background');
 
-            if (!canvasElement) logMessage("Error: Canvas element not found!");
-            if (!videoElement) logMessage("Error: Video element not found!");
-            if (!backgroundElement) logMessage("Error: Background element not found!");
+          if (!canvasElement) logMessage("Error: Canvas element not found!");
+          if (!videoElement) logMessage("Error: Video element not found!");
+          if (!backgroundElement) logMessage("Error: Background element not found!");
 
-            // MediaPipe Selfie Segmentationのセットアップ
-            selfieSegmentation = new SelfieSegmentation({
-                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
-            });
-            selfieSegmentation.setOptions({ modelSelection: 1 });
-            selfieSegmentation.onResults(onResults);
+          // MediaPipe Selfie Segmentationのセットアップ
+          selfieSegmentation = new SelfieSegmentation({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
+          });
+          selfieSegmentation.setOptions({ modelSelection: 1 });
+          selfieSegmentation.onResults(onResults);
 
-            await startVideoStream();
+          // 背景画像の読み込み完了時にフラグをセット
+          backgroundElement.onload = () => {
+            logMessage("Background image loaded.");
+            isBackgroundLoaded = true;
+          };
 
-            // 背景画像の読み込み完了時にフラグをセット
-            backgroundElement.onload = () => {
-                logMessage("Background image loaded.");
-                isBackgroundLoaded = true;
-            };
+          // 背景画像をリロードしてonloadイベントをトリガー
+          backgroundElement.src = "/assets/images/background1.jpg";
 
-            // 背景画像をリロードしてonloadイベントをトリガー
-            backgroundElement.src = "/assets/images/background1.jpg";
+          // 初期状態でカメラをONにする
+          await startVideoStream();
+          document.getElementById('toggleCameraButton').innerText = "カメラ OFF";
         }
 
         async function startVideoStream() {
-            logMessage("Starting video stream...");
+          logMessage("Starting video stream...");
+          videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+          videoElement.srcObject = videoStream;
 
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-
-            videoElement.srcObject = stream;
-
+          // 映像が読み込まれてからセグメンテーションを開始する
+          videoElement.onloadedmetadata = () => {
             videoElement.play();
+            isCameraOn = true;
+            segment(); // カメラがONになった後に`segment`を呼び出す
+          };
+        }
 
-            async function segment() {
-                if (isBackgroundLoaded) {
-                    logMessage("Sending video frame for segmentation...");
-                    await selfieSegmentation.send({ image: videoElement });
-                } else {
-                    logMessage("Waiting for background image to load...");
-                }
-                requestAnimationFrame(segment);
-            }
+        function stopVideoStream() {
+          logMessage("Stopping video stream...");
+          if (videoStream) {
+            videoStream.getTracks().forEach(track => track.stop());
+            videoElement.srcObject = null;
+            isCameraOn = false;
+          }
+        }
 
-            segment();
+        function toggleCamera() {
+          if (isCameraOn) {
+            stopVideoStream();
+            document.getElementById('toggleCameraButton').innerText = "カメラ ON";
+          } else {
+            startVideoStream().then(() => {
+              document.getElementById('toggleCameraButton').innerText = "カメラ OFF";
+            });
+          }
+        }
+
+        async function segment() {
+          if (isCameraOn && isBackgroundLoaded) {
+            logMessage("Sending video frame for segmentation...");
+            await selfieSegmentation.send({ image: videoElement });
+          }
+          if (isCameraOn) requestAnimationFrame(segment);
         }
 
         function onResults(results) {
-            logMessage("Received segmentation results...");
+          if (!isCameraOn) return; // カメラがオフの場合は処理をスキップ
 
-            const context = canvasElement.getContext('2d');
-            context.clearRect(0, 0, canvasElement.width, canvasElement.height);
+          logMessage("Received segmentation results...");
+          const context = canvasElement.getContext('2d');
+          context.clearRect(0, 0, canvasElement.width, canvasElement.height);
 
-            // 背景画像を描画
-            logMessage("Drawing background image...");
-            context.globalCompositeOperation = 'source-over';
-            context.drawImage(backgroundElement, 0, 0, canvasElement.width, canvasElement.height);
+          // 背景画像を描画
+          logMessage("Drawing background image...");
+          context.globalCompositeOperation = 'source-over';
+          context.drawImage(backgroundElement, 0, 0, canvasElement.width, canvasElement.height);
 
-            // segmentationMaskを利用して人物部分だけをカメラ映像に適用
-            logMessage("Applying segmentation mask for person cutout...");
+          // segmentationMaskを利用して人物部分だけをカメラ映像に適用
+          logMessage("Applying segmentation mask for person cutout...");
 
-            // マスクを新しいCanvasに描画して人物のアルファチャンネルを作成
-            const maskCanvas = document.createElement('canvas');
-            maskCanvas.width = canvasElement.width;
-            maskCanvas.height = canvasElement.height;
-            const maskContext = maskCanvas.getContext('2d');
-            maskContext.drawImage(results.segmentationMask, 0, 0, canvasElement.width, canvasElement.height);
+          // マスクを新しいCanvasに描画して人物のアルファチャンネルを作成
+          const maskCanvas = document.createElement('canvas');
+          maskCanvas.width = canvasElement.width;
+          maskCanvas.height = canvasElement.height;
+          const maskContext = maskCanvas.getContext('2d');
+          maskContext.drawImage(results.segmentationMask, 0, 0, canvasElement.width, canvasElement.height);
 
-            // 人物部分だけをカメラ映像で重ねる
-            maskContext.globalCompositeOperation = 'source-in';
-            maskContext.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+          // 人物部分だけをカメラ映像で重ねる
+          maskContext.globalCompositeOperation = 'source-in';
+          maskContext.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
 
-            // マスクされたカメラ映像をメインキャンバスに描画
-            context.drawImage(maskCanvas, 0, 0, canvasElement.width, canvasElement.height);
+          // マスクされたカメラ映像をメインキャンバスに描画
+          context.drawImage(maskCanvas, 0, 0, canvasElement.width, canvasElement.height);
 
-            logMessage("Finished drawing frame with segmented person over background.");
+          logMessage("Finished drawing frame with segmented person over background.");
         }
 
         // 背景画像を変更する関数
         window.changeBackground = function(imagePath) {
-            logMessage("Changing background to: " + imagePath);
-
-            isBackgroundLoaded = false;
-
-            backgroundElement.src = imagePath;
-
-            backgroundElement.onload = () => {
-                logMessage("New background image loaded.");
-                isBackgroundLoaded = true;
-            };
+          logMessage("Changing background to: " + imagePath);
+          isBackgroundLoaded = false;
+          backgroundElement.src = imagePath;
+          backgroundElement.onload = () => {
+            logMessage("New background image loaded.");
+            isBackgroundLoaded = true;
+          };
         };
     </script>
 </head>
@@ -120,11 +141,12 @@
     <canvas id="outputCanvas" width="640" height="480"></canvas>
 </div>
 
-<!-- HTML側に背景切り替えボタンを追加 -->
+<!-- HTML側に背景切り替えボタンとカメラ切り替えボタンを追加 -->
 <div style="margin-top: 20px;">
     <button onclick="changeBackground('/assets/images/background1.jpg')">背景1</button>
     <button onclick="changeBackground('/assets/images/background2.jpg')">背景2</button>
     <button onclick="changeBackground('/assets/images/background3.jpg')">背景3</button>
+    <button id="toggleCameraButton" onclick="toggleCamera()">カメラ OFF</button>
 </div>
 </body>
 </html>
