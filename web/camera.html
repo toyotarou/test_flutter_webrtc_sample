@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <title>Virtual Background Camera</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation"></script>
+    <!-- TensorFlow.jsを先に読み込みます -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.12.0"></script>
+    <!-- MediaPipe Selfie Segmentationライブラリを読み込みます -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js"></script>
     <style>
         #outputCanvasContainer {
           display: flex;
@@ -43,6 +45,7 @@
           backgroundElement.src = "/assets/images/background1.jpg";
           document.body.appendChild(backgroundElement);
 
+          // SelfieSegmentationのインスタンスを直接作成
           selfieSegmentation = new SelfieSegmentation({
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`,
           });
@@ -82,10 +85,8 @@
         function toggleCamera() {
           if (isCameraOn) {
             stopVideoStream();
-            document.getElementById("toggleCameraButton").innerText = "カメラ ON";
           } else {
             startVideoStream();
-            document.getElementById("toggleCameraButton").innerText = "カメラ OFF";
           }
         }
 
@@ -133,7 +134,7 @@
     <button onclick="changeBackground('/assets/images/background1.jpg')">背景1</button>
     <button onclick="changeBackground('/assets/images/background2.jpg')">背景2</button>
     <button onclick="changeBackground('/assets/images/background3.jpg')">背景3</button>
-    <button id="toggleCameraButton" onclick="toggleCamera()">カメラ OFF</button>
+    <button id="toggleCameraButton" onclick="toggleCamera()">カメラ ON/OFF</button>
 </div>
 </body>
 </html>

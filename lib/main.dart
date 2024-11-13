@@ -1,6 +1,4 @@
-// ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
-// ignore: avoid_web_libraries_in_flutter
 import 'dart:js' as js;
 import 'package:flutter/material.dart';
 
@@ -23,9 +21,35 @@ class MyApp extends StatelessWidget {
               onPressed: () => html.window.location.href = 'camera.html',
               child: const Text('カメラ画面へ'),
             ),
+            ElevatedButton(
+              onPressed: toggleCamera,
+              child: const Text('カメラ ON/OFF'),
+            ),
+            ElevatedButton(
+              onPressed: () => changeBackground('/assets/images/background1.jpg'),
+              child: const Text('背景1'),
+            ),
+            ElevatedButton(
+              onPressed: () => changeBackground('/assets/images/background2.jpg'),
+              child: const Text('背景2'),
+            ),
+            ElevatedButton(
+              onPressed: () => changeBackground('/assets/images/background3.jpg'),
+              child: const Text('背景3'),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  // カメラのオン/オフを切り替えるDart関数
+  void toggleCamera() {
+    js.context.callMethod('toggleCamera');
+  }
+
+  // 背景画像を変更するDart関数
+  void changeBackground(String imagePath) {
+    js.context.callMethod('changeBackground', [imagePath]);
   }
 }
