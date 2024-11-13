@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Virtual Background Camera</title>
-    <!-- TensorFlow.jsを先に読み込みます -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.12.0"></script>
-    <!-- MediaPipe Selfie Segmentationライブラリを読み込みます -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js"></script>
     <style>
         #outputCanvasContainer {
@@ -17,12 +15,6 @@
         #outputCanvas {
           border: 1px solid #000;
         }
-        .button-container {
-          display: flex;
-          justify-content: center;
-          gap: 10px;
-          margin-top: 20px;
-        }
     </style>
     <script>
         let videoElement;
@@ -32,6 +24,30 @@
         let isBackgroundLoaded = false;
         let isCameraOn = false;
         let videoStream;
+
+        // Dartからのメッセージを受信して処理を実行
+        window.addEventListener('message', (event) => {
+          const { command, imagePath } = event.data;
+
+          if (command === 'toggleCamera') {
+            toggleCamera();
+          } else if (command === 'changeBackground' && imagePath) {
+            changeBackground(imagePath);
+          }
+        });
+
+        function toggleCamera() {
+          if (isCameraOn) {
+            stopVideoStream();
+          } else {
+            startVideoStream();
+          }
+        }
+
+        function changeBackground(imagePath) {
+          isBackgroundLoaded = false;
+          backgroundElement.src = imagePath;
+        }
 
         function initializeSegmentation() {
           videoElement = document.createElement("video");
@@ -45,7 +61,6 @@
           backgroundElement.src = "/assets/images/background1.jpg";
           document.body.appendChild(backgroundElement);
 
-          // SelfieSegmentationのインスタンスを直接作成
           selfieSegmentation = new SelfieSegmentation({
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`,
           });
@@ -82,14 +97,6 @@
           }
         }
 
-        function toggleCamera() {
-          if (isCameraOn) {
-            stopVideoStream();
-          } else {
-            startVideoStream();
-          }
-        }
-
         async function segment() {
           if (isCameraOn && isBackgroundLoaded) {
             await selfieSegmentation.send({ image: videoElement });
@@ -116,11 +123,6 @@
 
           context.drawImage(maskCanvas, 0, 0, canvasElement.width, canvasElement.height);
         }
-
-        function changeBackground(imagePath) {
-          isBackgroundLoaded = false;
-          backgroundElement.src = imagePath;
-        }
     </script>
 </head>
 <body onload="initializeSegmentation()">
@@ -128,13 +130,6 @@
 
 <div id="outputCanvasContainer">
     <canvas id="outputCanvas" width="640" height="480"></canvas>
-</div>
-
-<div class="button-container">
-    <button onclick="changeBackground('/assets/images/background1.jpg')">背景1</button>
-    <button onclick="changeBackground('/assets/images/background2.jpg')">背景2</button>
-    <button onclick="changeBackground('/assets/images/background3.jpg')">背景3</button>
-    <button id="toggleCameraButton" onclick="toggleCamera()">カメラ ON/OFF</button>
 </div>
 </body>
 </html>
