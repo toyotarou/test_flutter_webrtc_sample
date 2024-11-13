@@ -29,15 +29,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
-class CameraControl {
-  static void initializeSegmentation() => js.context.callMethod('initializeSegmentation');
-
-  static void startVideoStream() => js.context.callMethod('startVideoStream');
-
-  static void stopVideoStream() => js.context.callMethod('stopVideoStream');
-
-  static void toggleCamera() => js.context.callMethod('toggleCamera');
-
-  static void changeBackground(String imagePath) => js.context.callMethod('changeBackground', [imagePath]);
-}
